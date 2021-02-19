@@ -5,6 +5,7 @@ command -v telnet > /dev/null 2>&1 || { echo >&2 "I require telnet. Run: apt-get
 command -v sshpass > /dev/null 2>&1 || { echo >&2 "I require sshpass. Run: apt-get install sshpass. Aborting."; exit 1; }
 command -v masscan > /dev/null 2>&1 || { echo >&2 "I require masscan. Run: apt-get install masscan. Aborting."; exit 1; }
 }
+dependencies
 read -e -p "Ip range list: " targets
 read -e -p "Port to scan: " port
 read -e -p "Rate MasScan: " rscan
